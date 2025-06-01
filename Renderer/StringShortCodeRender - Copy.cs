@@ -2,27 +2,28 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ShortCodeRenderer.Renderer
 {
-    public class StringShortCodeRender : IShortCodeRender
+    public class TaskShortCodeRender : IShortCodeRender
     {
-        private TaskOr<string> _value;
+        private Func<ShortCodeInfo, Task<string>> _value;
 
         public ShortCodeOptions Options { get; set; } = new ShortCodeOptions();
 
-        public StringShortCodeRender(TaskOr<string> value)
+        public TaskShortCodeRender(Func<ShortCodeInfo, Task<string>> value)
         {
             _value = value;
         }
-        public StringShortCodeRender(TaskOr<string> value, ShortCodeOptions options)
+        public TaskShortCodeRender(Func<ShortCodeInfo, Task<string>> value, ShortCodeOptions options)
         {
             _value = value;
             Options = options;
         }
         public TaskOr<string> Render(ShortCodeInfo info)
         {
-            return _value;
+            return _value(info);
         }
         public override string ToString()
         {
