@@ -55,9 +55,10 @@ namespace ShortCodeRenderer
                 return renderer;
             return null;
         }
-        private const string ShortCodePattern = @"\[(\w+)([^\]]*)](?:(.*?)(\[/\1]))?";
-        private const string ShortCodeAttrPattern = @"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))";
-        private const string ShortCodeInnerAttrPattern = @"\[(\w+)](.*?)\[/\1]";
+
+        private static readonly Regex ShortCodePattern = new Regex(@"\[(\w+)([^\]]*)](?:(.*?)(\[/\1]))?", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex ShortCodeInnerAttrPattern = new Regex(@"\[(\w+)](.*?)\[/\1]", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex ShortCodeAttrPattern = new Regex(@"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))", RegexOptions.Compiled | RegexOptions.Singleline);
 
 
         private  IShortCodeRender Evulate(ref int lastIndex, StringBuilder sb, Match match, out ShortCodeInfo info)
@@ -83,7 +84,7 @@ namespace ShortCodeRenderer
             string attrRaw = match.Groups[2].Value;
             if (!string.IsNullOrEmpty(attrRaw))
             {
-                foreach (Match matchAttr in Regex.Matches(attrRaw, ShortCodeAttrPattern))
+                foreach (Match matchAttr in ShortCodeAttrPattern.Matches(attrRaw))
                 {
                     string key = matchAttr.Groups[1].Value;
                     if (string.IsNullOrEmpty(key))
@@ -97,7 +98,7 @@ namespace ShortCodeRenderer
             {
                 StringBuilder content2 = new StringBuilder();
                 int _lastIndex = 0;
-                foreach (Match matchAttr in Regex.Matches(content, ShortCodeInnerAttrPattern, RegexOptions.Singleline))
+                foreach (Match matchAttr in ShortCodeInnerAttrPattern.Matches(content))
                 {
                     content2.Append(content.Substring(_lastIndex, matchAttr.Index - _lastIndex));
                     var key = matchAttr.Groups[1].Value;
@@ -129,7 +130,7 @@ namespace ShortCodeRenderer
         {
             if (string.IsNullOrEmpty(input) || (_renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
-            var matches = Regex.Matches(input, ShortCodePattern, RegexOptions.Singleline);
+            var matches = ShortCodePattern.Matches(input);
             var sb = new StringBuilder();
             int lastIndex = 0;
             foreach (Match match in matches)
@@ -155,7 +156,7 @@ namespace ShortCodeRenderer
         {
             if (string.IsNullOrEmpty(input) || (_renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
-            var matches = Regex.Matches(input, ShortCodePattern, RegexOptions.Singleline);
+            var matches = ShortCodePattern.Matches(input);
             var sb = new StringBuilder();
             int lastIndex = 0;
             foreach (Match match in matches)
