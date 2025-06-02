@@ -47,9 +47,11 @@ namespace ShortCodeRenderer
         {
             _renderers.Clear();
         }
-        private IShortCodeRender GetRendrer(string name)
+        private IShortCodeRender GetRenderer(string name, Dictionary<string, IShortCodeRender> tempRenderers)
         {
-            if (_renderers.TryGetValue(name, out var renderer))
+            if (tempRenderers != null && tempRenderers.TryGetValue(name, out var renderer))
+                return renderer;
+            if (_renderers.TryGetValue(name, out renderer))
                 return renderer;
             if (GlobalRenderers.TryGetValue(name, out renderer))
                 return renderer;
@@ -61,7 +63,7 @@ namespace ShortCodeRenderer
         private static readonly Regex ShortCodeAttrPattern = new Regex(@"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))", RegexOptions.Compiled | RegexOptions.Singleline);
 
 
-        private  IShortCodeRender Evulate(ref int lastIndex, StringBuilder sb, Match match, out ShortCodeInfo info)
+        private  IShortCodeRender Evulate(ref int lastIndex, StringBuilder sb, Match match, Dictionary<string, IShortCodeRender> tempRenderers, out ShortCodeInfo info)
         {
             info = null;
             string name = match.Groups[1].Value;
@@ -71,7 +73,7 @@ namespace ShortCodeRenderer
                 sb.Append(match.Value);
                 return null;
             }
-            var renderer = GetRendrer(name);
+            var renderer = GetRenderer(name, tempRenderers);
             if (renderer == null)
             {
                 lastIndex = match.Index + match.Length;
@@ -125,10 +127,27 @@ namespace ShortCodeRenderer
             info.IsClosed = match.Groups[4].Success;
             return renderer;
         }
+        public string Render(ShortCodeInfo info) => Render(info, null);
 
-        public string Render(string input)
+        public string Render(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
-            if (string.IsNullOrEmpty(input) || (_renderers.Count == 0 && GlobalRenderers.Count == 0))
+            if (info  == null || string.IsNullOrEmpty(info.Name) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
+                return string.Empty;
+            var renderer = GetRenderer(info.Name, tempRenderers);
+            if (renderer == null)
+                return string.Empty;
+            var r = renderer.Render(info);
+            if (r != null && !r.IsAsync() && r.Value != null)
+            {
+                return r.Value as string;
+            }
+            return string.Empty;
+        }
+        public string Render(string input) => Render(input, null);
+
+        public string Render(string input, Dictionary<string, IShortCodeRender> tempRenderers)
+        {
+            if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
             var matches = ShortCodePattern.Matches(input);
             var sb = new StringBuilder();
@@ -136,7 +155,7 @@ namespace ShortCodeRenderer
             foreach (Match match in matches)
             {
                 sb.Append(input.Substring(lastIndex, match.Index - lastIndex));
-                var renderer = Evulate(ref lastIndex, sb, match, out ShortCodeInfo info);  
+                var renderer = Evulate(ref lastIndex, sb, match, tempRenderers, out ShortCodeInfo info);  
                 if(renderer == null)
                     continue; 
                 var r = renderer.Render(info);
@@ -152,9 +171,36 @@ namespace ShortCodeRenderer
             }
             return sb.ToString();
         }
-        public async Task<string> RenderAsync(string input)
+        public Task<string> RenderAsync(ShortCodeInfo info) => RenderAsync(info, null);
+
+        public async Task<string> RenderAsync(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
-            if (string.IsNullOrEmpty(input) || (_renderers.Count == 0 && GlobalRenderers.Count == 0))
+            if (info == null || string.IsNullOrEmpty(info.Name) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
+                return string.Empty;
+            var renderer = GetRenderer(info.Name, tempRenderers);
+            if (renderer == null)
+                return string.Empty;
+            var r = renderer.Render(info);
+            if (r != null)
+            {
+                if (r.IsAsync())
+                {
+                    string value = await r.AsTask();
+                    if (value != null)
+                       return value;
+                }
+                else if (r.Value != null)
+                {
+                    return (string) r.Value;
+                }
+            }
+            return string.Empty;
+        }
+
+        public  Task<string> RenderAsync(string input) =>  RenderAsync(input, null);
+        public async Task<string> RenderAsync(string input, Dictionary<string, IShortCodeRender> tempRenderers)
+        {
+            if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
             var matches = ShortCodePattern.Matches(input);
             var sb = new StringBuilder();
@@ -162,7 +208,7 @@ namespace ShortCodeRenderer
             foreach (Match match in matches)
             {
                 sb.Append(input.Substring(lastIndex, match.Index - lastIndex));
-                var renderer = Evulate(ref lastIndex, sb, match, out ShortCodeInfo info);
+                var renderer = Evulate(ref lastIndex, sb, match, tempRenderers, out ShortCodeInfo info);
                 if (renderer == null)
                     continue;
                 var r = renderer.Render(info);

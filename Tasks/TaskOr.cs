@@ -29,7 +29,6 @@ namespace ShortCodeRenderer.Tasks
         public static implicit operator TaskOr<T>(Task<T> task) => new TaskOr<T>(task);
         public static implicit operator TaskOr<T>(Func<Task<T>> asyncFunc) => new TaskOr<T>(asyncFunc);
 
-
         public async Task<T> AsTask()
         {
             return IsAsync() ? await _factory() : _value;
