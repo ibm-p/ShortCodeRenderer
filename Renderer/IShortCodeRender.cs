@@ -8,6 +8,6 @@ namespace ShortCodeRenderer.Renderer
     public interface IShortCodeRender
     {
         ShortCodeOptions Options { get; set; }
-        TaskOr<string> Render(ShortCodeInfo info);
+        TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info);
     }
 }

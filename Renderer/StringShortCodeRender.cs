@@ -20,7 +20,7 @@ namespace ShortCodeRenderer.Renderer
             _value = value;
             Options = options;
         }
-        public TaskOr<string> Render(ShortCodeInfo info)
+        public TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info)
         {
             return _value;
         }

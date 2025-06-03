@@ -128,7 +128,10 @@ namespace ShortCodeRenderer
             info.IsClosed = match.Groups[4].Success;
             return renderer;
         }
+        public string Render(ShortCodeInfo info) => Render(ShortCodeContext.Create(), info, null);
         public string Render(ShortCodeContext ctx, ShortCodeInfo info) => Render(ctx, info, null);
+
+        public string Render( ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers) => Render(ShortCodeContext.Create(), info, tempRenderers);
 
         public string Render(ShortCodeContext ctx, ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
@@ -137,14 +140,17 @@ namespace ShortCodeRenderer
             var renderer = GetRenderer(info.Name, tempRenderers);
             if (renderer == null)
                 return string.Empty;
-            var r = renderer.Render(info);
+            var r = renderer.Render(ctx, info);
             if (r != null && !r.IsAsync() && r.Value != null)
             {
                 return r.Value as string;
             }
             return string.Empty;
         }
+        public string Render(string input) => Render(ShortCodeContext.Create(), input, null);
+
         public string Render(ShortCodeContext ctx, string input) => Render(ctx, input, null);
+        public string Render(string input, Dictionary<string, IShortCodeRender> tempRenderers) => Render(ShortCodeContext.Create(), input, tempRenderers);
 
         public string Render(ShortCodeContext ctx, string input, Dictionary<string, IShortCodeRender> tempRenderers)
         {
@@ -159,7 +165,7 @@ namespace ShortCodeRenderer
                 var renderer = Evulate(ref lastIndex, sb, match, tempRenderers, out ShortCodeInfo info);  
                 if(renderer == null)
                     continue; 
-                var r = renderer.Render(info);
+                var r = renderer.Render(ctx, info);
                 if(r != null && !r.IsAsync() && r.Value != null)
                 {
                     sb.Append(r.Value);
@@ -172,16 +178,20 @@ namespace ShortCodeRenderer
             }
             return sb.ToString();
         }
-        public Task<string> RenderAsync(ShortCodeContext ctx, ShortCodeInfo info) => RenderAsync(info, null);
 
-        public async Task<string> RenderAsync(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
+
+        public Task<string> RenderAsync(ShortCodeContext ctx, ShortCodeInfo info) => RenderAsync(info, null);
+        public Task<string> RenderAsync(ShortCodeInfo info) => RenderAsync(info, null);
+        public Task<string> RenderAsync(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers) => RenderAsync(ShortCodeContext.Create(), info, tempRenderers);
+
+        public async Task<string> RenderAsync(ShortCodeContext ctx, ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (info == null || string.IsNullOrEmpty(info.Name) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return string.Empty;
             var renderer = GetRenderer(info.Name, tempRenderers);
             if (renderer == null)
                 return string.Empty;
-            var r = renderer.Render(info);
+            var r = renderer.Render(ctx, info);
             if (r != null)
             {
                 if (r.IsAsync())
@@ -197,9 +207,12 @@ namespace ShortCodeRenderer
             }
             return string.Empty;
         }
+        public Task<string> RenderAsync(string input) => RenderAsync(ShortCodeContext.Create(), input, null);
 
-        public  Task<string> RenderAsync(ShortCodeContext ctx, string input) =>  RenderAsync(input, null);
-        public async Task<string> RenderAsync(string input, Dictionary<string, IShortCodeRender> tempRenderers)
+        public Task<string> RenderAsync(ShortCodeContext ctx, string input) =>  RenderAsync(input, null);
+        public  Task<string> RenderAsync(string input, Dictionary<string, IShortCodeRender> tempRenderers) =>  RenderAsync(ShortCodeContext.Create(), input, tempRenderers);
+
+        public async Task<string> RenderAsync(ShortCodeContext ctx, string input, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
@@ -212,7 +225,7 @@ namespace ShortCodeRenderer
                 var renderer = Evulate(ref lastIndex, sb, match, tempRenderers, out ShortCodeInfo info);
                 if (renderer == null)
                     continue;
-                var r = renderer.Render(info);
+                var r = renderer.Render(ctx, info);
                 if(r != null)
                 {
                     if(r.IsAsync())
