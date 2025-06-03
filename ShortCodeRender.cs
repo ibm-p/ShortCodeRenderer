@@ -14,17 +14,18 @@ namespace ShortCodeRenderer
     public class ShortCodeRender
     {
         private readonly static Dictionary<string, IShortCodeRender> GlobalRenderers = new Dictionary<string, IShortCodeRender>(StringComparer.OrdinalIgnoreCase);
+        public  bool Contains(string name, bool searchInGlobalRenders = true) => (searchInGlobalRenders && GlobalRenderers.ContainsKey(name)) || _renderers.ContainsKey(name);
         public static void AddGlobalRenderer(string name, string value)
         {
-            GlobalRenderers.Add(name, new StringShortCodeRender(value));
+            GlobalRenderers[name] = new StringShortCodeRender(value);
         }
         public static void AddGlobalRenderer(string name, Func<ShortCodeInfo, TaskOr<string>> value)
         {
-            GlobalRenderers.Add(name, new FuncShortCodeRender(value));
+            GlobalRenderers[name] = new FuncShortCodeRender(value);
         }
         public static void AddGlobalRenderer(string name, IShortCodeRender renderer)
         {
-            GlobalRenderers.Add(name, renderer);
+            GlobalRenderers[name] = renderer;
         }
         public static void ClearGlobalRenderers()
         {
@@ -33,15 +34,15 @@ namespace ShortCodeRenderer
         private readonly Dictionary<string, IShortCodeRender> _renderers = new Dictionary<string, IShortCodeRender>(StringComparer.OrdinalIgnoreCase);
         public void AddRenderer(string name, string value)
         {
-            _renderers.Add(name, new StringShortCodeRender(value));
+            _renderers[name] = new StringShortCodeRender(value);
         }
         public void AddRenderer(string name, Func<ShortCodeInfo, TaskOr<string>> value)
         {
-            _renderers.Add(name, new FuncShortCodeRender(value));
+            _renderers[name] = new FuncShortCodeRender(value);
         }
         public void AddRenderer(string name, IShortCodeRender renderer)
         {
-            _renderers.Add(name, renderer);
+            _renderers[name] = renderer;
         }
         public void ClearRenderers()
         {
@@ -127,9 +128,9 @@ namespace ShortCodeRenderer
             info.IsClosed = match.Groups[4].Success;
             return renderer;
         }
-        public string Render(ShortCodeInfo info) => Render(info, null);
+        public string Render(ShortCodeContext ctx, ShortCodeInfo info) => Render(ctx, info, null);
 
-        public string Render(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
+        public string Render(ShortCodeContext ctx, ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (info  == null || string.IsNullOrEmpty(info.Name) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return string.Empty;
@@ -143,9 +144,9 @@ namespace ShortCodeRenderer
             }
             return string.Empty;
         }
-        public string Render(string input) => Render(input, null);
+        public string Render(ShortCodeContext ctx, string input) => Render(ctx, input, null);
 
-        public string Render(string input, Dictionary<string, IShortCodeRender> tempRenderers)
+        public string Render(ShortCodeContext ctx, string input, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
                 return input;
@@ -171,7 +172,7 @@ namespace ShortCodeRenderer
             }
             return sb.ToString();
         }
-        public Task<string> RenderAsync(ShortCodeInfo info) => RenderAsync(info, null);
+        public Task<string> RenderAsync(ShortCodeContext ctx, ShortCodeInfo info) => RenderAsync(info, null);
 
         public async Task<string> RenderAsync(ShortCodeInfo info, Dictionary<string, IShortCodeRender> tempRenderers)
         {
@@ -197,7 +198,7 @@ namespace ShortCodeRenderer
             return string.Empty;
         }
 
-        public  Task<string> RenderAsync(string input) =>  RenderAsync(input, null);
+        public  Task<string> RenderAsync(ShortCodeContext ctx, string input) =>  RenderAsync(input, null);
         public async Task<string> RenderAsync(string input, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _renderers.Count == 0 && GlobalRenderers.Count == 0))
