@@ -13,16 +13,32 @@ namespace ShortCodeRenderer
         private static readonly Regex ShortCodeInnerAttrPattern = new Regex(@"\[(\w+)](.*?)\[/\1]", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex ShortCodeAttrPattern = new Regex(@"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))", RegexOptions.Compiled | RegexOptions.Singleline);
         private readonly Dictionary<Type, object> _services =  new Dictionary<Type, object>();
-
+        public Dictionary<string, object> Variables { get; internal set; } = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         public ShortCodeContext Register<T>(T instance)
         {
             _services[typeof(T)] = instance;
             return this;
         }
 
+
+        public T GetVariable<T>(string key)
+        {
+            if (Variables.TryGetValue(key, out var value) && value is T variable)
+            {
+                return variable;
+            }
+            return default;
+        }
+        public ShortCodeContext SetVariable<T>(string key, T value)
+        {
+            Variables[key] = value;
+            return this;
+        }
         public T Resolve<T>()
         {
-            return (T)_services[typeof(T)];
+            if(_services.TryGetValue(typeof(T), out var service))
+                return (T)service;
+            return default;
         }
         public bool IsRegistered<T>()
         {
