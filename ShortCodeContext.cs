@@ -14,6 +14,10 @@ namespace ShortCodeRenderer
         private static readonly Regex ShortCodeAttrPattern = new Regex(@"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))", RegexOptions.Compiled | RegexOptions.Singleline);
         private readonly Dictionary<Type, object> _services =  new Dictionary<Type, object>();
         public Dictionary<string, object> Variables { get; internal set; } = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private ShortCodeContext()
+        {
+            
+        }
         public ShortCodeContext Register<T>(T instance)
         {
             _services[typeof(T)] = instance;
