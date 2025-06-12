@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ShortCodeRenderer
 {
@@ -12,11 +13,11 @@ namespace ShortCodeRenderer
         private static readonly Regex ShortCodePattern = new Regex(@"\[(\w+)([^\]]*)](?:(.*?)(\[/\1]))?", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex ShortCodeInnerAttrPattern = new Regex(@"\[(\w+)](.*?)\[/\1]", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex ShortCodeAttrPattern = new Regex(@"(\w+)\s*=\s*(?:(['""])(.*?)\2|([^\s]+))", RegexOptions.Compiled | RegexOptions.Singleline);
-        private readonly Dictionary<Type, object> _services =  new Dictionary<Type, object>();
+        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
         public Dictionary<string, object> Variables { get; internal set; } = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         private ShortCodeContext()
         {
-            
+
         }
         public ShortCodeContext Register<T>(T instance)
         {
@@ -40,7 +41,7 @@ namespace ShortCodeRenderer
         }
         public T Resolve<T>()
         {
-            if(_services.TryGetValue(typeof(T), out var service))
+            if (_services.TryGetValue(typeof(T), out var service))
                 return (T)service;
             return default;
         }
@@ -63,9 +64,63 @@ namespace ShortCodeRenderer
         private ShortCodeContainer _container;
         public static ShortCodeContext Create(ShortCodeContainer container)
         {
-            return new ShortCodeContext() { 
+            return new ShortCodeContext()
+            {
                 _container = container
             };
+        }
+        public string RenderStd(ShortCodeContext ctx, string code)
+        {
+            ShortCodeTokenizer tokenizer = new ShortCodeTokenizer();
+            var results = tokenizer.Tokenize(ref code, true);
+            //tokenizer.LinkTags(results);
+            StringBuilder sb = new StringBuilder();
+            ShortCodeTokenizeValue linker = null;
+            
+            foreach (var token in results)
+            {
+                if (linker != null && linker.Linked != token)
+                    continue;
+                if(linker != null)
+                {
+                    int start = linker.EndIndex + 1;
+                    int endIndex = token.Index;
+                    int length = endIndex - start;
+                    sb.Append(code.Substring(start, length));
+                    linker = null;
+                }
+                if (token.InTag)
+                {
+                    if (token.Linked != null)
+                    {
+                        linker = token;
+                        continue;
+                    }
+                    if (token.IsSlashUsed)
+                        continue;
+                    var renderer = _container.GetRenderer(token.TagName, null);
+                    if(renderer == null)
+                    {
+                        sb.Append(code.Substring(token.Index, token.Length));
+                        continue;
+                    }
+                    var info = new ShortCodeInfo();
+                    info.Name = token.TagName;
+                    info.Attributes = token.Attributes;
+                    var r = renderer.Render(ctx, info);
+                    if (r != null && !r.IsAsync() && r.Value != null)
+                    {
+                        sb.Append(r.Value);
+                    }
+                }
+                else
+                {
+                    sb.Append(token.Content);
+                }
+
+            }
+            return sb.ToString();
+
         }
         private IShortCodeRender Evulate(ref int lastIndex, StringBuilder sb, Match match, Dictionary<string, IShortCodeRender> tempRenderers, out ShortCodeInfo info)
         {

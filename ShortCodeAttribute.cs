@@ -20,8 +20,8 @@ namespace ShortCodeRenderer
         public ShortCodeAttributes() : base(StringComparer.OrdinalIgnoreCase)
         {
         }
-        public ShortCodeAttribute Get(string nam) =>
-            TryGetValue(nam, out var attribute) ? attribute : null;
+        public ShortCodeAttribute Get(string name) =>
+            TryGetValue(name, out var attribute) ? attribute : null;
         public ShortCodeAttribute GetOrAdd(string name)
         {
             if (!TryGetValue(name, out var attribute))
