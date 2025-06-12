@@ -15,6 +15,7 @@ namespace ShortCodeRenderer
         public int Length => EndIndex - Index + 1;
         public string Content { get; set; }
         public string TagName { get; set; }
+        public bool Unclosed { get; set; }
         public ShortCodeAttributes Attributes { get; set; }
         public ShortCodeTokenizeValue Linked { get; set; } // For linking tags, e.g. [/tag] to [tag]
     }
@@ -152,6 +153,7 @@ namespace ShortCodeRenderer
             char specialChar = '\0'; // Özel karakter kontrolü, örneğin [[[]]] gibi durumlar için
             int startIndex = 0;
             List<ShortCodeTokenizeValue> values = new List<ShortCodeTokenizeValue>();
+            Dictionary<string, ShortCodeTokenizeValue> tagsForLinking = linkClosed ? new  Dictionary<string, ShortCodeTokenizeValue>() : null;
             for (int i = 0; i < tLen; i++)
             {
                 char cur = input[i];
@@ -202,6 +204,8 @@ namespace ShortCodeRenderer
                             inTag = false;
                             tokenizeVal.EndIndex = i;
                             values.Add(tokenizeVal);
+                            if (linkClosed)
+                                tagsForLinking[tokenizeVal.TagName] = tokenizeVal;
                             startIndex = i + 1;
                         }
 
@@ -237,9 +241,15 @@ namespace ShortCodeRenderer
                             if (isCLoseUsed && linkClosed)
                             {
                                 //Eğer linkleme yapılacaksa, mevcut tagı aynı isimli kapatılmamış tag ile ilişkilendir
-                                var target = values.FirstOrDefault(token => token.TagName == tagContent.ToString() && !token.IsSlashUsed);
-                                if (target != null)
+                                if(tagsForLinking.TryGetValue(last.TagName, out var target))
+                                {
                                     target.Linked = last;
+                                    tagsForLinking.Remove(last.TagName);
+                                }
+                                else
+                                {
+                                    last.Unclosed = true;
+                                }
                             }
                             tagContent.Clear();
                             isCLoseUsed = false;

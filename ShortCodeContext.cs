@@ -76,34 +76,62 @@ namespace ShortCodeRenderer
             //tokenizer.LinkTags(results);
             StringBuilder sb = new StringBuilder();
             ShortCodeTokenizeValue linker = null;
-            
+            StringBuilder sbLinked = new StringBuilder();
             foreach (var token in results)
             {
-                if (linker != null && linker.Linked != token)
-                    continue;
-                if(linker != null)
+                if (linker != null)
                 {
-                    int start = linker.EndIndex + 1;
-                    int endIndex = token.Index;
-                    int length = endIndex - start;
-                    sb.Append(code.Substring(start, length));
+                    if (linker.Linked != token)
+                    {
+                        if (!token.InTag)
+                            sbLinked.Append(token.Content);
+                        else
+                            sbLinked.Append(code.Substring(token.Index, token.Length));
+                        continue;
+                    }
+                    //int start = linker.EndIndex + 1;
+                    //int endIndex = token.Index;
+                    //int length = endIndex - start;
+                    //sb.Append(code.Substring(start, length));
+                    var info = new ShortCodeInfo();
+                    info.Name = linker.TagName;
+                    info.Attributes = linker.Attributes;
+                    info.Content = sbLinked.ToString();
+                    var renderer = _container.GetRenderer(token.TagName, null);
+                    if (renderer == null)
+                    {
+                        sb.Append(code.Substring(linker.Index, linker.Length));
+                        sb.Append(sbLinked);
+                        sb.Append(code.Substring(token.Index, token.Length));
+                        continue;
+                    }
+                    info.Name = token.TagName;
+                    info.Attributes = token.Attributes;
+                    var r = renderer.Render(ctx, info);
+                    if (r != null && !r.IsAsync() && r.Value != null)
+                    {
+                        sb.Append(r.Value);
+                    }
                     linker = null;
+
+                    continue;
                 }
                 if (token.InTag)
                 {
-                    if (token.Linked != null)
+                    var renderer =token.IsSlashUsed ? null : _container.GetRenderer(token.TagName, null);
+                    if (token.Linked != null && renderer != null)
                     {
                         linker = token;
+                        sbLinked.Clear();
                         continue;
                     }
-                    if (token.IsSlashUsed)
-                        continue;
-                    var renderer = _container.GetRenderer(token.TagName, null);
-                    if(renderer == null)
+                    if (renderer == null)
                     {
                         sb.Append(code.Substring(token.Index, token.Length));
                         continue;
                     }
+                    if (token.IsSlashUsed && !token.Unclosed)
+                        continue;
                     var info = new ShortCodeInfo();
                     info.Name = token.TagName;
                     info.Attributes = token.Attributes;
