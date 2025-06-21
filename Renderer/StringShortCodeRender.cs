@@ -5,12 +5,9 @@ using System.Text;
 
 namespace ShortCodeRenderer.Renderer
 {
-    public class StringShortCodeRender : IShortCodeRender
+    public class StringShortCodeRender : ShortCodeRenderBase, IShortCodeRender
     {
         private TaskOr<string> _value;
-
-        public ShortCodeOptions Options { get; set; } = new ShortCodeOptions();
-
         public StringShortCodeRender(TaskOr<string> value)
         {
             _value = value;
@@ -20,7 +17,7 @@ namespace ShortCodeRenderer.Renderer
             _value = value;
             Options = options;
         }
-        public TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info)
+        public  override TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info)
         {
             return _value;
         }

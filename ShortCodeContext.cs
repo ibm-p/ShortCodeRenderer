@@ -69,7 +69,7 @@ namespace ShortCodeRenderer
                 _container = container
             };
         }
-        public string RenderStd(ShortCodeContext ctx, string code)
+        public string Render(ShortCodeContext ctx, string code, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             ShortCodeTokenizer tokenizer = new ShortCodeTokenizer();
             var results = tokenizer.Tokenize(ref code, true);
@@ -237,7 +237,7 @@ namespace ShortCodeRenderer
 
         public string Render(string input, Dictionary<string, IShortCodeRender> tempRenderers) => Render(this, input, tempRenderers);
 
-        private string Render(ShortCodeContext ctx, string input, Dictionary<string, IShortCodeRender> tempRenderers)
+        private string RenderRegex(ShortCodeContext ctx, string input, Dictionary<string, IShortCodeRender> tempRenderers)
         {
             if (string.IsNullOrEmpty(input) || ((tempRenderers == null || tempRenderers.Count == 0) && _container._renderers.Count == 0 && ShortCodeContainer.GlobalRenderers.Count == 0))
                 return input;

@@ -6,11 +6,9 @@ using System.Threading.Tasks;
 
 namespace ShortCodeRenderer.Renderer
 {
-    public class TaskShortCodeRender : IShortCodeRender
+    public class TaskShortCodeRender : ShortCodeRenderBase, IShortCodeRender
     {
         private Func<ShortCodeInfo, Task<string>> _value;
-
-        public ShortCodeOptions Options { get; set; } = new ShortCodeOptions();
 
         public TaskShortCodeRender(Func<ShortCodeInfo, Task<string>> value)
         {
@@ -21,7 +19,7 @@ namespace ShortCodeRenderer.Renderer
             _value = value;
             Options = options;
         }
-        public TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info)
+        public override TaskOr<string> Render(ShortCodeContext context, ShortCodeInfo info)
         {
             return _value(info);
         }
