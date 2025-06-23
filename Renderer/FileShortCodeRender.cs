@@ -1,6 +1,7 @@
 ﻿using ShortCodeRenderer.Tasks;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ShortCodeRenderer.Renderer
@@ -12,17 +13,16 @@ namespace ShortCodeRenderer.Renderer
         private bool _cached = false;
         private string _cachedContent = null;
         private DateTime _cachedTime = DateTime.MinValue;
-        public FileShortCodeRender(string filePath)
+        public FileShortCodeRender(string filePath) : this(filePath, true)
         {
-            if (filePath.StartsWith("@"))
-                _filePath = DefaultPath + filePath.Substring(1);
-            else
-                _filePath = filePath;
-            _cached = true;
+
         }
         public FileShortCodeRender(string filePath, bool cached)
         {
-            _filePath = filePath;
+            if (filePath.StartsWith("@"))
+                _filePath = Path.Combine(DefaultPath, filePath.Substring(1));
+            else
+                _filePath = filePath;
             _cached = cached;
         }
         public FileShortCodeRender(string filePath, bool cached, ShortCodeOptions options)
@@ -38,10 +38,15 @@ namespace ShortCodeRenderer.Renderer
             {
                 return _cachedContent;
             }
-
             if (System.IO.File.Exists(_filePath))
             {
-                string content = System.IO.File.ReadAllText(_filePath);
+
+                string content = "";
+                using (FileStream fs = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    content = reader.ReadToEnd();
+                }
                 if (_cached)
                 {
                     _cachedContent = content;

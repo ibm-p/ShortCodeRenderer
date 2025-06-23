@@ -168,7 +168,6 @@ namespace ShortCodeRenderer
                         using (StreamReader reader = new StreamReader(fs))
                         {
                             ImportRenderersFromJsonText(reader.ReadToEnd());
-
                         }
                     }
                 }
